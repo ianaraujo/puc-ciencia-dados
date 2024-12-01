@@ -2,7 +2,7 @@ IEEE_FEATURES = [
     'TransactionID',
     'hasIdentity',
     'isFraud',
-    'TransactionDT'
+    'TransactionDT',
     'TransactionAmt',
     'ProductCD',
     'card1',
@@ -293,15 +293,15 @@ IEEE_FEATURES = [
 ]
 
 
-def get_features(existing: list[str]) -> list[str]:
-    relevant_features = [f for f in IEEE_FEATURES if f in existing]
+def get_drop_features(existing: list[str]) -> list[str]:
+    features_to_remove = [f for f in existing if f not in IEEE_FEATURES]
 
-    print(f"Existing features: {len(existing)}")
+    print(f"Previous features: {len(existing)}")
     print(f"Relevant features: {len(IEEE_FEATURES)}")
-    print(f"Final training set features: {len(relevant_features)}")
+    print(f"Final training set features: {len(existing) - len(features_to_remove)}")
 
-    return relevant_features
+    return features_to_remove
 
 
 if __name__ == "__main__":
-    print(get_features(['had_id', 'device_name']))
+    print(get_drop_features(['had_id', 'device_name']))
