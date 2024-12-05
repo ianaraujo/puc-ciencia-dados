@@ -31,6 +31,7 @@ CAT_FEATURES = [
     'id_37',
     'id_38',
     'hasIdentity',
+    'TransactionDT',
     'Weekday',
     'Day',
     'Hour',
