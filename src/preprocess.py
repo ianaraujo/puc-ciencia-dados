@@ -8,27 +8,6 @@ from sklearn.decomposition import PCA
 
 from config.features import CAT_FEATURES
 
-def remove_inf(X_train, X_test=None):
-    """
-    Transform 'inf' values into 'nan'.
-
-    Parameters:
-    - X_train: pd.DataFrame, Training dataset.
-    - X_test: pd.DataFrame, Testing dataset (optional).
-
-    Returns:
-    - X_train_transformed: np.ndarray, Transformed training data.
-    - X_test_transformed: np.ndarray, Transformed testing data (if X_test is provided).
-    """
-    X_train_transformed = X_train.replace([np.inf, -np.inf], np.nan)
-
-    if X_test is not None:
-        X_test_transformed = X_test.replace([np.inf, -np.inf], np.nan)
-        
-        return X_train_transformed, X_test_transformed
-
-    return X_train_transformed
-
 
 def preprocess_data(X_train, X_test=None, pca_components=90):
     """
@@ -64,10 +43,10 @@ def preprocess_data(X_train, X_test=None, pca_components=90):
     cat_features = np.unique(CAT_FEATURES + X_train.select_dtypes(include=['object']).columns.tolist())
     num_features = [col for col in X_train.columns if col not in cat_features and col not in pca_features]
 
-    X_train_transformed = X_train.replace([np.inf, -np.inf], np.nan)
+    X_train.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     if X_test is not None:
-        X_test_transformed = X_test.replace([np.inf, -np.inf], np.nan)
+        X_test.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     categorical_transformer = Pipeline(steps=[
         ('to_string', FunctionTransformer(lambda X: X.astype(str))),
@@ -95,10 +74,13 @@ def preprocess_data(X_train, X_test=None, pca_components=90):
         remainder='passthrough'
     )
 
-    X_train_transformed = preprocessor.fit_transform(X_train_transformed)
+    X_train_transformed = preprocessor.fit_transform(X_train)
 
     if X_test is not None:
-        X_test_transformed = preprocessor.transform(X_test_transformed)
-        return X_train_transformed, X_test_transformed
+        X_test_transformed = preprocessor.transform(X_test)
 
+        del X_test
+        return X_train_transformed, X_test_transformed
+    
+    del X_train
     return X_train_transformed
