@@ -3,13 +3,29 @@ import pickle
 import argparse
 import pandas as pd
 import numpy as np
-from src.preprocess import preprocess_data
+from src.preprocess import FeatureTransform, preprocess_data
 
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, roc_auc_score, precision_score, recall_score, fbeta_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix, roc_auc_score, precision_score, recall_score, f1_score
 
 from imblearn.under_sampling import RandomUnderSampler
+
+
+def read_train(dir: str = 'data/') -> pd.DataFrame:
+    merged_chunks = []
+
+    train_identity = pd.read_csv(dir + 'train_identity.csv')
+    transaction_chunks = pd.read_csv(dir + 'train_transaction.csv', chunksize=10 ** 5)
+
+    for chunk in transaction_chunks:
+        new_chunk = chunk.merge(train_identity, on='TransactionID', how='left')
+        merged_chunks.append(new_chunk)
+
+    train = pd.concat(merged_chunks)
+    train['hasIdentity'] = (train[train_identity.columns.difference(['TransactionID'])].isna().all(axis=1) == False).astype(int)
+    
+    return train 
 
 
 def split_data(dataset: pd.DataFrame):
@@ -37,15 +53,24 @@ def main(args):
 
     start_time = time.time()
 
-    train = pd.read_parquet('data/train.parquet')
+    train = read_train(dir='data/')
+    train = FeatureTransform.create_features(train)
 
     X_train, X_test, y_train, y_test = split_data(train)
     X_train_transformed, X_test_transformed = preprocess_data(X_train, X_test)
     
-    undersampler = RandomUnderSampler(sampling_strategy='majority', random_state=seed)
+    undersampler = RandomUnderSampler(sampling_strategy=0.33, random_state=seed)
     X_train_transformed, y_train = undersampler.fit_resample(X_train_transformed, y_train)
 
-    clf = RandomForestClassifier(n_estimators=1000, max_depth=50, n_jobs=args.n_jobs, random_state=seed)
+    clf = RandomForestClassifier(
+        class_weight='balanced',
+        n_estimators=1000, 
+        max_depth=15,
+        max_features=None,
+        min_samples_split=15,
+        n_jobs=args.n_jobs, 
+        random_state=seed,
+    )
 
     print('Training model...')
     clf.fit(X_train_transformed, y_train)
@@ -57,23 +82,23 @@ def main(args):
     print()
 
     TN, FP, FN, TP = confusion_matrix(y_test, y_pred).ravel()
-    
-    print('Confusion Matrix Results')
-    print('True Negative:  ', TN)
-    print('False Positive: ', FP)
-    print('False Negative: ', FN)
-    print('True Positive:  ', TP)
+
+    print("## Confusion Matrix (Markdown Table)\n")
+    print("|                  | Predicted: Negative | Predicted: Positive |")
+    print("|------------------|---------------------|----------------------|")
+    print(f"| **Actual: Negative** | {TN}                   | {FP}                    |")
+    print(f"| **Actual: Positive** | {FN}                   | {TP}                    |")
     print()
 
     auc_score = roc_auc_score(y_test, y_pred_proba)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+    f2 = fbeta_score(y_test, y_pred, beta=2)
 
     print('ROC AUC:   ', auc_score)
     print('Precision: ', precision)
     print('Recall:    ', recall)
-    print('F1 Score:  ', f1)
+    print('F2 Score:  ', f2)
     print()
 
     if args.output:
@@ -85,7 +110,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="RandomForest Classification Model")
-    parser.add_argument('--n_jobs', type=int, default=1, help='Number of parallel jobs to run for model training')
+    parser.add_argument('--n_jobs', type=int, default=-1, help='Number of parallel jobs to run for model training')
     parser.add_argument('--output', type=str, default=None, help='Path to save the trained model')
     
     args = parser.parse_args()
