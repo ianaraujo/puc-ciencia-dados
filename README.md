@@ -151,21 +151,27 @@ O método **Under Bagging** (Random Undersampler + Random Forest) consiste em ap
 
 Considerando o trade-off entre precisão e recall, o Under Bagging pode melhorar o recall em cenários de alta desproporção entre classes,em função da queda da precisão, pois o modelo pode se tornar mais suscetível a classificar instâncias como pertencentes à classe minoritária.
 
+![UnderBagging](/images/underbagging.png)
+
 ### SMOTE Bagging
 
 O **SMOTE Bagging** (SMOTE + Random Forest) utiliza a técnica de oversampling sintético (SMOTE) para gerar novas instâncias da classe minoritária. Nessa abordagem, em vez de reduzir a classe majoritária, cria-se artificialmente mais dados da classe minoritária, o que mitiga a perda de informação que ocorre no undersampling. O SMOTE gera exemplos adicionais interpolando pontos próximos no espaço de atributos, o que pode ajudar o modelo a aprender melhor as fronteiras da classe minoritária. Entretanto, se os dados sintéticos não forem bem representativos, o modelo pode “sobreajustar” padrões inexistentes.
 
 A adição de exemplos sintéticos costuma melhorar o recall (reduzir falsos negativos), mas pode reduzir a precisão se o modelo acabar gerando mais falsos positivos.
 
+![SMOTEBagging](/images/smotebagging.png)
+
 ### Adjusted Weights Random Forest
 
 Outra abordagem é manipular o peso das classes de forma que a classe minoritária receba maior importância durante o treinamento. Isso faz com que os erros na classe minoritária “custem” mais, levando o modelo a se concentrar em diminuir os falsos negativos (aumentar o recall). Por outro lado, se os pesos da classe minoritária forem muito altos, o modelo pode superestimar essa classe e classificar incorretamente muitos exemplos da classe majoritária, diminuindo assim a precisão. O ajuste fino desses pesos é fundamental para encontrar um equilíbrio adequado entre precisão e recall, permitindo que o Random Forest lide melhor com o problema de desbalanceamento sem descartar dados ou criar instâncias sintéticas.
 
+![Balanced](/images/balanced.png)
+
 ### Vanilla Random Forest
 
-```markdown
-ROC AUC: 0.8839
-```
+Precision: 0.8895 | Recall: 0.2467 | F2 : 0.3863
+
+![Vanilla](/images/vanilla.png)
 
 ### Trade-off Precisão/Recall
 
@@ -176,6 +182,8 @@ No caso dos pesos, é possível ajustar parâmetros como “class_weight” (no 
 Para analisar o comportamente desses parâmetros vamos utilizar duas métricas: **F2-Score e Average Precision**
 
 A métrica Average Precision (AP) mede a área sob a curva de Precisão vs. Recall ao longo de diferentes limiares de probabilidade. Em outras palavras, imagine que você gera vários valores de threshold para decidir quando um modelo classifica algo como positivo ou negativo, calculando a precisão e o recall em cada um desses valores. Em seguida, você plota os pontos em um gráfico com o Recall no eixo x e a Precisão no eixo y. A Average Precision é a área sob essa curva, ou seja, quanto maior ela for, melhor será o equilíbrio entre precisão e recall em todos os limiares.
+
+![PRCurve](images/prcurve.png)
 
 ### Otimização de Hiperparâmetros
 
